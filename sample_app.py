@@ -49,3 +49,101 @@ print("=============================================")
 for each in json_data["route"]["legs"][0]["maneuvers"]:
  print((each["narrative"]) + " (" + str("{:.2f}".format((each["distance"])*1.61) + " km)"))
 print("=============================================\n")
+##conversing python to java
+#dowloading or region
+// Set up the OfflineManager
+offlineManager = OfflineManager.getInstance(SimpleOfflineMapActivity.this);
+
+// Create a bounding box for the offline region
+LatLngBounds latLngBounds = new LatLngBounds.Builder()
+  .include(new LatLng(40.307155, -105.378504)) // Northeast
+  .include(new LatLng(39.328620, -104.583757)) // Southwest
+  .build();
+
+// Define the offline region
+OfflineTilePyramidRegionDefinition definition = new OfflineTilePyramidRegionDefinition(
+  mapboxMap.getStyleUrl(),
+  latLngBounds,
+  10,
+  20,
+  MainActivity.this.getResources().getDisplayMetrics().density);
+
+
+// Implementation that uses JSON to store Denver as the offline region name.
+byte[] metadata;
+try {
+  JSONObject jsonObject = new JSONObject();
+  jsonObject.put(JSON_FIELD_REGION_NAME, "Denver Metro Area");
+  String json = jsonObject.toString();
+  metadata = json.getBytes(JSON_CHARSET);
+} catch (Exception exception) {
+  Log.e(TAG, "Failed to encode metadata: " + exception.getMessage());
+  metadata = null;
+}
+
+// Create the region asynchronously
+offlineManager.createOfflineRegion(definition, metadata,
+  new OfflineManager.CreateOfflineRegionCallback() {
+    @Override
+    public void onCreate(OfflineRegion offlineRegion) {
+      offlineRegion.setDownloadState(OfflineRegion.STATE_ACTIVE);
+
+      // Monitor the download progress using setObserver
+      offlineRegion.setObserver(new OfflineRegion.OfflineRegionObserver() {
+        @Override
+        public void onStatusChanged(OfflineRegionStatus status) {
+
+          // Calculate the download percentage
+          double percentage = status.getRequiredResourceCount() >= 0
+          ? (100.0 * status.getCompletedResourceCount() / status.getRequiredResourceCount()) :
+          0.0;
+
+          if (status.isComplete()) {
+            // Download complete
+            Log.d(TAG, "Region downloaded successfully.");
+          } else if (status.isRequiredResourceCountPrecise()) {
+            Log.d(TAG, percentage);
+          }
+        }
+
+        @Override
+        public void onError(OfflineRegionError error) {
+          // If an error occurs, print to logcat
+          Log.e(TAG, "onError reason: " + error.getReason());
+          Log.e(TAG, "onError message: " + error.getMessage());
+        }
+
+        @Override
+        public void mapboxTileCountLimitExceeded(long limit) {
+          // Notify if offline region exceeds maximum tile count
+          Log.e(TAG, "Maps SDK Tile count limit exceeded: " + limit);
+        }
+      });
+    }
+
+  @Override
+  public void onError(String error) {
+    Log.e(TAG, "Error: " + error);
+  }
+});
+# managing the dowloaded region
+offlineManager.listOfflineRegions(new OfflineManager.ListOfflineRegionsCallback() {
+        @Override
+        public void onList(OfflineRegion[] offlineRegions) {
+          if (offlineRegions.length > 0) {
+            // delete the last item in the offlineRegions list
+            offlineRegions[(offlineRegions.length - 1)].delete(new OfflineRegion.OfflineRegionDeleteCallback() {
+
+              @Override
+              public void onDelete() {
+                Log.e(TAG, "Deleted region");
+              }
+
+              @Override
+              public void onError(String error) {
+                Log.e(TAG, "On Delete error: " + error);
+              }
+            });
+          }
+        }
+    }
