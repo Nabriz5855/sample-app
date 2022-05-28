@@ -33,6 +33,37 @@ else:
  print("************************************************************************")
  print("For Staus Code: " + str(json_status) + "; Refer to:")
  print("https://developer.mapquest.com/documentation/directions-api/status-codes")
+ // Set up start and destination for the route
+Coordinate nyc = new Coordinate(40.7326808, -73.9843407);
+List<Coordinate> boston = Arrays.asList(new Coordinate(42.355097, -71.055464));
+
+// Set up route options
+RouteOptions routeOptions = new RouteOptions.Builder()
+        .maxRoutes(3)
+        .systemOfMeasurementForDisplayText(SystemOfMeasurement.UNITED_STATES_CUSTOMARY) // or specify METRIC
+        .language("en_US") // NOTE: alternately, specify "es_US" for Spanish in the US
+        .highways(RouteOptionType.ALLOW)
+        .tolls(RouteOptionType.ALLOW)
+        .ferries(RouteOptionType.DISALLOW)
+        .internationalBorders(RouteOptionType.DISALLOW)
+        .unpaved(RouteOptionType.DISALLOW)
+        .seasonalClosures(RouteOptionType.AVOID)
+        .build();
+
+mRouteService.requestRoutes(nyc, boston, routeOptions, new RoutesResponseListener() {
+    @Override
+    public void onRoutesRetrieved(List<Route> routes) {
+        if (routes.size() > 0) {
+            mNavigationManager.startNavigation((Route) routes.get(0));
+        }
+    }
+
+    @Override
+    public void onRequestFailed(@Nullable Integer httpStatusCode, @Nullable IOException exception) {}
+
+    @Override
+    public void onRequestMade() {}
+});
  print("************************************************************************\n")
  print("API Status: " + str(json_status) + " = A successful route call.\n")
  print("=============================================")
